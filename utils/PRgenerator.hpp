@@ -15,7 +15,6 @@ public:
     vector<int64_t> int_buff;
     vector<int8_t> bool_buff;
     PRgenerator() = delete;
-    PRgenerator(const PRgenerator &other) = delete;
 
     int64_t pop_int64();
     int8_t pop_bool(); 

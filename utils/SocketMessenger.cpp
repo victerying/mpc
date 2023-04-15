@@ -14,6 +14,7 @@ void send_up(int send_socket, const void *buf, size_t buf_len)
         ptr += ret;
     }
 }
+
 void recv_up(int recv_socket, void *buf, size_t buf_len)
 {
     size_t ptr = 0;
@@ -29,6 +30,7 @@ void recv_up(int recv_socket, void *buf, size_t buf_len)
         ptr += ret;
     }
 }
+
 SocketMessenger::SocketMessenger(size_t _party_id) : party_id{_party_id}
 {
     for (size_t i = 0; i < 3; i++)
