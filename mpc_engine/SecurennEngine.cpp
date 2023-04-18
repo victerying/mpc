@@ -5,7 +5,7 @@
 
 using std::bitset;
 
-// #define MYDEBUG
+#define MYDEBUG
 
 // #if defined MYDEBUG
 

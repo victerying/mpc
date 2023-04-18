@@ -10,6 +10,11 @@ test2: test2.cpp ../utils/SocketMessenger.cpp
 test_securenn: test_securenn.cpp ../utils/SocketMessenger.cpp ../utils/PRgenerator.cpp ../mpc_engine/SecurennEngine.cpp
 	g++ -g $^ -o target/$@ -Wno-pointer-arith -fopenmp
 
+test_ABY3: test_ABY3.cpp ../utils/SocketMessenger.cpp ../utils/PRgenerator.cpp ../mpc_engine/ABY3Engine.cpp
+	g++ -g $^ -o target/$@ -Wno-pointer-arith -fopenmp
+
+
+
 run-test2: test2
 	@./target/test2 0 > ./log/party0.txt &
 	@./target/test2 1 > ./log/party1.txt &
@@ -20,4 +25,10 @@ run-test_securenn: test_securenn
 	@./target/test_securenn 0 > ./log/party0.txt &
 	@./target/test_securenn 1 > ./log/party1.txt &
 	@./target/test_securenn 2 > ./log/party2.txt 
+	@echo "complete run-test_securenn"
+
+run-test_ABY3: test_ABY3
+	@./target/test_ABY3 0 > ./log/party0.txt &
+	@./target/test_ABY3 1 > ./log/party1.txt &
+	@./target/test_ABY3 2 > ./log/party2.txt 
 	@echo "complete run-test_securenn"

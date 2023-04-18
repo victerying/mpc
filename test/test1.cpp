@@ -226,6 +226,41 @@ void test4()
     }
 }
 
+/// @brief 测试Eigen::Array
+void test5()
+{
+    size_t vec_size = 5;
+    using VecI64 = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
+    VecI64 _X_plain(vec_size), X_plain;
+    X_plain.resize(vec_size);
+    assert(X_plain.rows() == vec_size && X_plain.cols() == 1);
+    assert(_X_plain.rows() == vec_size && _X_plain.cols() == 1);
+    X_plain << 1, 2, 3, 4, 5;
+    _X_plain << 1, 2, 3, -4, 5;
+
+    Eigen::Array<bool, Eigen::Dynamic, 1> flags = _X_plain == X_plain;
+
+    string temp;
+    vecI642string(X_plain, temp);
+    string2vecI64(temp, _X_plain);
+    flags = X_plain == _X_plain;
+    std::cout << "result: \n" << flags << " \n";
+
+    size_t rows = 5, cols = 4;
+    vec_size = rows * cols;
+    X_plain.resize(vec_size);
+    for (size_t i = 0; i < vec_size; i++)
+    {
+        X_plain[i] = rand_int64();
+    }
+    MatrixXl matx(rows, cols);
+    vecI642matrix(X_plain, matx);
+    matrix2vecI64(matx, _X_plain);
+    flags = X_plain == _X_plain;
+    std::cout << "result: \n" << flags << " \n";
+    
+}
+
 int main(int argc, char const *argv[])
 {
     printf("%lu\n", sizeof(long long));
@@ -234,4 +269,5 @@ int main(int argc, char const *argv[])
     test2();
     test3();
     test4();
+    test5();
 }
