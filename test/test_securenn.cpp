@@ -14,7 +14,9 @@ using std::cout;
 void test1(SecurennEngine &securenn_eigine)
 {
     size_t party_id = securenn_eigine.party_id;
-    printf("party_id: %lu\n", party_id);
+    printf("[LOG]:\ttest1 party_id: %lu\n", party_id);
+    print_plus();
+
     if (party_id == 2)
     {
         for (size_t j = 0; j < 2; j++)
@@ -43,66 +45,41 @@ void test1(SecurennEngine &securenn_eigine)
         }
         printf("\n");
     }
+    print_minus();
 }
 
 /// @brief 测试分享和揭秘
 /// @param securenn_eigine
 void test2(SecurennEngine &securenn_eigine)
 {
-    printf("start test2\n");
+    printf("[LOG]:\tstart test2\n");
+    print_plus();
     size_t party_id = securenn_eigine.party_id;
     size_t vec_size = 10;
     vector<int64_t> X_plain(vec_size);
     vector<int64_t> Xj, _X_plain;
-    for (size_t l = 0; l < 1; l++)
+
+    if (party_id == 2)
     {
-        printf("starting loop %lu\n", l);
-        if (party_id == 2)
-        {
-            securenn_eigine.share(X_plain, Xj);
-            securenn_eigine.reveal(Xj, _X_plain);
-            printf("finish reveal, reveal :\n");
-            for (size_t i = 0; i < vec_size; i++)
-            {
-                printf("%016lX ", _X_plain[i]);
-            }
-            printf("\n");
-        }
-        else
-        {
-            printf("plain_text:\n");
-            for (size_t i = 0; i < vec_size; i++)
-            {
-                X_plain[i] = securenn_eigine.prgs[1 - party_id].int_buff[i];
-                printf("%016lX ", X_plain[i]);
-            }
-            printf("\n");
-
-            securenn_eigine.share(X_plain, Xj);
-
-            printf("finish share, share :\n");
-            for (size_t i = 0; i < vec_size; i++)
-            {
-                printf("%016lX ", Xj[i]);
-            }
-            printf("\n");
-
-            securenn_eigine.reveal(Xj, _X_plain);
-            printf("finish reveal, reveal :\n");
-            for (size_t i = 0; i < vec_size; i++)
-            {
-                printf("%016lX ", _X_plain[i]);
-            }
-            printf("\n");
-        }
+        securenn_eigine.share(X_plain, Xj);
+        securenn_eigine.reveal(Xj, _X_plain);
     }
-    printf("end test2\n");
+    else
+    {
+        securenn_eigine.share(X_plain, Xj);
+        securenn_eigine.reveal(Xj, _X_plain);
+        assert(X_plain == _X_plain);
+    }
+
+    print_minus();
 }
 
 /// @brief 测试向量乘法和矩阵乘法
 /// @param securenn_eigine
 void test3(SecurennEngine &securenn_eigine)
 {
+    printf("[LOG]:\tstart test3\n");
+    print_plus();
     size_t party_id = securenn_eigine.party_id;
     // 测试vector_mul
     {
@@ -118,21 +95,10 @@ void test3(SecurennEngine &securenn_eigine)
         securenn_eigine.reveal(Xj, X_plain);
         securenn_eigine.reveal(Yj, Y_plain);
         securenn_eigine.reveal(Zj, Z_plain);
-
-        printf("x :\n");
-        print_vec_int64(X_plain);
-        printf("y :\n");
-        print_vec_int64(Y_plain);
-
-        printf("x*y :\n");
         for (size_t i = 0; i < vec_size; i++)
         {
-            printf("%016lX ", X_plain[i] * Y_plain[i]);
+            assert(Z_plain[i] == X_plain[i] * Y_plain[i]);
         }
-        printf("\n");
-
-        printf("z :\n");
-        print_vec_int64(Z_plain);
     }
 
     // 测试matrix_mul
@@ -158,43 +124,22 @@ void test3(SecurennEngine &securenn_eigine)
         securenn_eigine.matrix_mul(Xj, Yj, Zj);
 
         MatrixXl X_plain(rows, lens), Y_plain(lens, cols), Z_plain(rows, cols);
-        vector<int64_t> temp_vecj, temp_vec_plain;
-
-        matrix2vector(Xj, temp_vecj);
-        securenn_eigine.reveal(temp_vecj, temp_vec_plain);
-        vector2matrix(temp_vec_plain, X_plain);
-
-        matrix2vector(Yj, temp_vecj);
-        securenn_eigine.reveal(temp_vecj, temp_vec_plain);
-        vector2matrix(temp_vec_plain, Y_plain);
-
-        matrix2vector(Xj, temp_vecj);
-        securenn_eigine.reveal(temp_vecj, temp_vec_plain);
-        vector2matrix(temp_vec_plain, X_plain);
-
-        matrix2vector(Zj, temp_vecj);
-        securenn_eigine.reveal(temp_vecj, temp_vec_plain);
-        vector2matrix(temp_vec_plain, Z_plain);
-
-        printf("X_plain:\n");
-        cout << X_plain << "\n";
-        printf("Y_plain:\n");
-        cout << Y_plain << "\n";
-        printf("X_plain* Y_plain:\n");
-        cout << X_plain * Y_plain << "\n";
-        printf("Z_plain:\n");
-        cout << Z_plain << "\n";
+        securenn_eigine.reveal_matrix(Xj, X_plain);
+        securenn_eigine.reveal_matrix(Yj, Y_plain);
+        securenn_eigine.reveal_matrix(Zj, Z_plain);
+        assert(Z_plain == X_plain * Y_plain);
     }
+    print_minus();
 }
 
 /// @brief 测试privateCompare
 /// @param securenn_eigine
 void test4(SecurennEngine &securenn_eigine)
 {
-    printf("start test4+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+    printf("[LOG]:\tstart test4\n");
+    print_plus();
     size_t party_id = securenn_eigine.party_id;
     size_t vec_size = 5;
-
     vector<int64_t> X_plain(vec_size);
     vector<int64_t> R_plain(vec_size);
     vector<int8_t> Beta1_plain(vec_size);
@@ -205,7 +150,7 @@ void test4(SecurennEngine &securenn_eigine)
     Xbits_share[1].resize(vec_size);
     if (2 != party_id)
     {
-        size_t rerandom = 14;
+        size_t rerandom = time(NULL) % 100;
         for (size_t i = 0; i < rerandom; i++)
         {
             securenn_eigine.prgs[1 - party_id].pop_int64();
@@ -234,26 +179,26 @@ void test4(SecurennEngine &securenn_eigine)
         assert(Xbits_plain == _Xbits_plain);
 
         securenn_eigine.privateCompare(Xbits_share[party_id], Beta1_plain, R_plain, Beta2_plain);
-        printf("X_plain:\n");
-        print_vec_int64(X_plain);
-        printf("R_plain:\n");
-        print_vec_int64(R_plain);
-        printf("Xbits_plain:\n");
-        print_vec_zpshare(Xbits_plain);
-        printf("Xbits_share[%lu]:\n", party_id);
-        print_vec_zpshare(Xbits_share[party_id]);
-        printf("Beta1_plain:\n");
-        for (size_t i = 0; i < Beta1_plain.size(); i++)
-        {
-            printf("%d ", Beta1_plain[i]);
-        }
-        printf("\n");
-        printf("X > R:\n");
+        vector<int8_t> Beta_plain;
+        securenn_eigine.reveal_vec_bools(Beta1_plain, Beta_plain);
+
         for (size_t i = 0; i < vec_size; i++)
         {
-            printf("%d ", (uint64_t)X_plain[i] > (uint64_t)R_plain[i]);
+            int8_t temp = (uint64_t)X_plain[i] > (uint64_t)R_plain[i];
+            assert(Beta_plain[i] == temp);
         }
-        printf("\n");
+        // printf("X_plain:\n");
+        // print_vec_int64(X_plain);
+        // printf("R_plain:\n");
+        // print_vec_int64(R_plain);
+        // printf("Xbits_plain:\n");
+        // print_vec_zpshare(Xbits_plain);
+        // printf("Xbits_share[%lu]:\n", party_id);
+        // print_vec_zpshare(Xbits_share[party_id]);
+        // printf("Beta1_plain:\n");
+        // printVecbool(Beta1_plain);
+        // printf("Beta_plain:\n");
+        // printVecbool(Beta_plain);
     }
     else
     {
@@ -261,26 +206,22 @@ void test4(SecurennEngine &securenn_eigine)
         securenn_eigine.reveal_zp(Xbits_plain, _Xbits_plain);
 
         securenn_eigine.privateCompare(Xbits_plain, Beta1_plain, R_plain, Beta2_plain);
-        printf("Beta2_plain:\n");
-        for (size_t i = 0; i < Beta2_plain.size(); i++)
-        {
-            printf("%d ", Beta2_plain[i]);
-        }
-        printf("\n");
+        vector<int8_t> Beta_plain;
+        securenn_eigine.reveal_vec_bools(Beta2_plain, Beta_plain);
     }
+    print_minus();
 }
 
-/// @brief 测试shareConvert和msb
+/// @brief 测试shareConvert和msb_L_1
 /// @param securenn_eigine
 void test5(SecurennEngine &securenn_eigine)
 {
-    printf("start test5+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+    printf("[LOG]:\tstart test5\n");
+    print_plus();
     size_t party_id = securenn_eigine.party_id;
-    size_t vec_size = 20;
+    size_t vec_size = 10;
     vector<int64_t> A_plain(vec_size);
     vector<int64_t> Aj, Yj, Y_plain;
-    
-    
 
     if (party_id == 2)
     {
@@ -290,7 +231,7 @@ void test5(SecurennEngine &securenn_eigine)
     }
     else
     {
-        size_t rerandom = 14;
+        size_t rerandom = time(NULL) % 100;
         for (size_t i = 0; i < rerandom; i++)
         {
             securenn_eigine.prgs[1 - party_id].pop_int64();
@@ -302,29 +243,69 @@ void test5(SecurennEngine &securenn_eigine)
             {
                 A_plain[i] = 1;
             }
-            
         }
+        A_plain[0] = 0;
+        A_plain[1] = (ino64_t)-1 << 63;
+        A_plain[2] = -2;
+        A_plain[3] = 1;
+        A_plain[4] = A_plain[1] - 1;
+
         securenn_eigine.share(A_plain, Aj);
         securenn_eigine.shareConvert(Aj, Yj);
         securenn_eigine.reveal_L_1(Yj, Y_plain);
     }
-    printf("A_plain\n");
-    print_vec_int64(A_plain);
-    printf("Y_plain\n");
-    print_vec_int64(Y_plain);
+
     if (2 != party_id)
     {
         assert(A_plain == Y_plain);
     }
-    
-    vector<int64_t> Bj, B_plain;
-    securenn_eigine.msb(Yj, Bj);
-    securenn_eigine.reveal(Bj, B_plain);
-    printf("B_plain\n");
-    print_vec_int64(B_plain);
 
+    vector<int64_t> Bj, B_plain;
+    securenn_eigine.msb_L_1(Yj, Bj);
+    securenn_eigine.reveal(Bj, B_plain);
+
+    for (size_t i = 0; i < vec_size; i++)
+    {
+        assert(B_plain[i] == Y_plain[i] < 0);
+    }
+    // printf("A_plain\n");
+    // print_vec_int64(A_plain);
+    // printf("Y_plain\n");
+    // print_vec_int64(Y_plain);
+    // printf("B_plain\n");
+    // print_vec_int64(B_plain);
+
+    print_minus();
 }
 
+/// @brief 和msb
+/// @param securenn_eigine
+void test6(SecurennEngine &securenn_eigine)
+{
+    printf("[LOG]:\tstart test5\n");
+    print_plus();
+    PRgenerator commRando(time(NULL), 0);
+    size_t vec_size = 10;
+    vector<int64_t> A_plain(vec_size), Aj, Bj, B_plain;
+    for (size_t i = 0; i < vec_size; i++)
+    {
+        A_plain[i] = commRando.pop_int64();
+        A_plain[i] = A_plain[i] / 2;
+    }
+    securenn_eigine.share(A_plain, Aj);
+    securenn_eigine.msb(Aj, Bj);
+    securenn_eigine.reveal(Bj, B_plain);
+    printf("A_plain\n");
+    print_vec_int64(A_plain);
+    printf("B_plain\n");
+    print_vec_int64(B_plain);
+    for (size_t i = 0; i < vec_size; i++)
+    {
+        assert(B_plain[i] == A_plain[i] < 0);
+    }
+    
+    print_minus();
+}
 
 int main(int argc, char const *argv[])
 {
@@ -341,11 +322,12 @@ int main(int argc, char const *argv[])
     }
     SocketMessenger socketMessenger(party_id);
     SecurennEngine securenn_eigine(&socketMessenger, party_id);
-    printf("start test securenn\n");
+    printf("[LOG]:\tstart test securenn\n");
     test1(securenn_eigine);
     test2(securenn_eigine);
     test3(securenn_eigine);
     test4(securenn_eigine);
     test5(securenn_eigine);
+    test6(securenn_eigine);
     return 0;
 }

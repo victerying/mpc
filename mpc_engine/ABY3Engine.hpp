@@ -38,17 +38,16 @@ public:
     void reveal(const array<VecI64, 2> &Xj, VecI64 &X_plain);
     void reveal_matrix(const array<MatrixXl, 2> &Xj, MatrixXl &X_plain);
     void reveal_bools(const array<vecbool, 2> &Xj, vecbool &X_plain);
-
     void reveal_bits(const array<VecI64, 2> &Xj, VecI64 &X_plain);
-    
+
     void matrix_mul(const array<MatrixXl, 2> &Xj, const array<MatrixXl, 2> &Yj, array<MatrixXl, 2> &Zj);
     void vector_mul(const array<VecI64, 2> &Xj, const array<VecI64, 2> &Yj, array<VecI64, 2> &Zj);
     void vecbool_mul(const array<vecbool, 2> &Xj, const array<vecbool, 2> &Yj, array<vecbool, 2> &Zj);
     void add_prepare(const array<VecI64, 2> &Xj, array<VecI64, 2> &Gj, array<VecI64, 2> &Pj);
     void msb(const array<VecI64, 2> &Gj,const array<VecI64, 2> &Pj, array<vecbool, 2> &Zj);
 
-
-
+    void trunc(const array<VecI64, 2> &Xj, array<VecI64, 2> &Yj, size_t number);
+    void bit_inject(const array<VecI64, 2> &Aj, const array<vecbool, 2> &Bj, array<VecI64, 2> &Cj);
 
     ABY3Engine(const ABY3Engine &other) = delete;
     ~ABY3Engine();

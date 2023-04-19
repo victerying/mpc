@@ -5,11 +5,8 @@
 
 using std::bitset;
 
-#define MYDEBUG
+// #define MYDEBUG
 
-// #if defined MYDEBUG
-
-// #endif
 
 /// @brief 两个输入都在 [0, L-2]范围内
 /// @param a
@@ -308,12 +305,11 @@ void SecurennEngine::vector_mul(const vector<int64_t> &Xj, const vector<int64_t>
         reveal(Zj, Z_plain);
         for (size_t i = 0; i < vec_size; i++)
         {
-
             assert(debug_E_plain[i] == X_plain[i] - A_plain[i]);
             assert(debug_F_plain[i] == Y_plain[i] - B_plain[i]);
             assert(E_plain[i] == X_plain[i] - A_plain[i]);
             assert(F_plain[i] == Y_plain[i] - B_plain[i]);
-            assert(Z_plain[i] == X_plain[i] *Y_plain[i]);
+            assert(Z_plain[i] == X_plain[i] * Y_plain[i]);
         }
 #endif
     }
@@ -366,6 +362,69 @@ void SecurennEngine::reveal(const vector<int64_t> &Xj, vector<int64_t> &X_plain)
         for (size_t i = 0; i < vec_size; i++)
         {
             X_plain[i] += Xj[i];
+        }
+    }
+}
+
+void SecurennEngine::reveal_matrix(const MatrixXl &Xj, MatrixXl &X_plain)
+{
+    size_t rows = Xj.rows(), cols = Xj.cols();
+    X_plain.resize(rows, cols);
+    if (party_id == 2)
+    {
+        for (size_t i = 0; i < 2; i++)
+        {
+            message_send[i].clear();
+        }
+        messenger->send_and_recv(message_send, message_recv); // 第一轮通信
+        MatrixXl X0(rows, cols), X1(rows, cols);
+        string2matrix(message_recv[0], X0);
+        string2matrix(message_recv[1], X1);
+        X_plain = X0 + X1;
+    }
+    else
+    {
+
+        matrix2string(Xj, message_send[1 - party_id]);
+        message_send[2] = message_send[1 - party_id];
+        messenger->send_and_recv(message_send, message_recv); // 第一轮通信
+        string2matrix(message_recv[1 - party_id], X_plain);
+        X_plain = X_plain + Xj;
+    }
+}
+
+/// @brief only for privateCompare
+/// @param Xj P0，P1持有beta1,P2持有beta2
+/// @param X_plain
+void SecurennEngine::reveal_vec_bools(const vector<int8_t> &Xj, vector<int8_t> &X_plain)
+{
+    size_t vec_size = Xj.size();
+    X_plain.resize(vec_size);
+    if (party_id == 2)
+    {
+        for (size_t i = 0; i < 2; i++)
+        {
+            vecbool2string(Xj, message_send[i]);
+        }
+        messenger->send_and_recv(message_send, message_recv); // 第一轮通信
+        vector<int8_t> X0, X1;
+        string2vecbool(message_recv[0], X0);
+        string2vecbool(message_recv[1], X1);
+        assert(X0 == X1);
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            X_plain[i] = Xj[i] ^ X0[i];
+        }
+    }
+    else
+    {
+        vecbool2string(Xj, message_send[2]);
+        message_send[1 - party_id].clear();
+        messenger->send_and_recv(message_send, message_recv); // 第一轮通信
+        string2vecbool(message_recv[2], X_plain);
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            X_plain[i] = Xj[i] ^ X_plain[i];
         }
     }
 }
@@ -453,6 +512,7 @@ void SecurennEngine::privateCompare(const vector<zpshare> &Xbits_j, const vector
     Beta2_plain.resize(vec_size);
     if (party_id == 0 || party_id == 1)
     {
+        // P0 P1公共随机数
         vector<zpshare> S_plain, U_plain;
         S_plain.resize(vec_size);
         U_plain.resize(vec_size);
@@ -474,12 +534,12 @@ void SecurennEngine::privateCompare(const vector<zpshare> &Xbits_j, const vector
                 }
             }
         }
+
         vector<zpshare> Dbits_j(vec_size);
         vector<zpshare> Rbits_plain(vec_size);
         vector<zpshare> Tbits_plain(vec_size);
         vector<zpshare> Wbits_j(vec_size);
         vector<zpshare> Cbits_j(vec_size);
-
         for (size_t i = 0; i < vec_size; i++)
         {
 
@@ -512,7 +572,6 @@ void SecurennEngine::privateCompare(const vector<zpshare> &Xbits_j, const vector
                 }
                 else
                 {
-                    printf("track 3. ");
                     if (k != 0)
                     {
                         Cbits_j[i][k] = (1 - party_id) * (1 + U_plain[i][k]) + (P - party_id) * U_plain[i][k];
@@ -536,15 +595,13 @@ void SecurennEngine::privateCompare(const vector<zpshare> &Xbits_j, const vector
         vecZpshare2string(Dbits_j, message_send[2]);
         messenger->send_and_recv(message_send, message_recv); // 第一轮通信
 #if defined MYDEBUG
-        // printf("privateCompare debuging\n");
-        // printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+
         vector<zpshare> Xbits_debug(vec_size);
         vector<zpshare> Wbits_debug(vec_size);
         vector<zpshare> Cbits_debug(vec_size);
         reveal_zp(Xbits_j, Xbits_debug);
         reveal_zp(Wbits_j, Wbits_debug);
         reveal_zp(Cbits_j, Cbits_debug);
-        
 
         // printf("Xbits_debug:\n");
         // print_vec_zpshare(Xbits_debug);
@@ -585,6 +642,10 @@ void SecurennEngine::privateCompare(const vector<zpshare> &Xbits_j, const vector
     }
     else // party_id == 2
     {
+        for (size_t i = 0; i < 2; i++)
+        {
+            message_send[i].clear();
+        }
         messenger->send_and_recv(message_send, message_recv); // 第一轮通信
         vector<zpshare> Dbits_0, Dbits_1;
         string2vecZpshare(message_recv[0], Dbits_0);
@@ -639,7 +700,13 @@ void SecurennEngine::shareConvert(const vector<int64_t> &Aj, vector<int64_t> &Yj
             Eta2_plain[i] = prgs[1 - party_id].bool_buff[i];
             R_share[0][i] = prgs[1 - party_id].int_buff[i];
             R_share[1][i] = prgs[1 - party_id].int_buff[vec_size + i];
+            // R不能为0
             R_plain[i] = R_share[0][i] + R_share[1][i];
+            if (R_plain[i] == 0)
+            {
+                R_plain[i] += 1;
+                R_share[1][i] += 1;
+            }
             Alpha_plain[i] = (uint64_t)R_plain[i] < (uint64_t)R_share[0][i];
         }
         vector<int64_t> Xj(vec_size);
@@ -664,7 +731,13 @@ void SecurennEngine::shareConvert(const vector<int64_t> &Aj, vector<int64_t> &Yj
         string2vecZpshare(message_recv[2].substr(0, temp_index), Xbits_j);
         string2vector(message_recv[2].substr(temp_index, message_recv[2].size() - temp_index), Delta_j);
         vector<int8_t> dummy_beta2plain;
-        privateCompare(Xbits_j, Eta2_plain, R_plain, dummy_beta2plain); // 第三轮通信
+        // R - 1
+        vector<int64_t> R_1_plain(vec_size);
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            R_1_plain[i] = R_plain[i] - 1;
+        }
+        privateCompare(Xbits_j, Eta2_plain, R_1_plain, dummy_beta2plain); // 第三轮通信
         message_send[1 - party_id].clear();
         message_send[2].clear();
         messenger->send_and_recv(message_send, message_recv); // 第四轮通信
@@ -703,34 +776,31 @@ void SecurennEngine::shareConvert(const vector<int64_t> &Aj, vector<int64_t> &Yj
         reveal_L_1(Delta_j, Delta_debug);
         reveal_L_1(Eta_j, Eta__debug);
         reveal_L_1(Theta_j, Theta_debug);
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            assert(Alpha_plain[i] == ((uint64_t)R_plain[i] < (uint64_t)R_share[0][i]));
+            assert(Beta_j[i] == ((uint64_t)Xj[i] < (uint64_t)R_share[party_id][i]));
+            assert(Delta_debug[i] == ((uint64_t)X_debug[i] < (uint64_t)Xj[i]));
+            assert(Eta__debug[i] == ((uint64_t)X_debug[i] >= (uint64_t)R_plain[i]));
+            assert(Theta_debug[i] == ((uint64_t)A_debug[i] < (uint64_t)Aj[i]));
+        }
+
         // printf("Aj:\n");
         // print_vec_int64(Aj);
         // printf("R_share[%lu]\n", party_id);
         // print_vec_int64(R_share[party_id]);
         // printf("Xj:\n");
         // print_vec_int64(Xj);
-
         // printf("A_debug:\n");
         // print_vec_int64(A_debug);
         // printf("R_plain:\n");
         // print_vec_int64(R_plain);
         // printf("X_debug:\n");
         // print_vec_int64(X_debug);
-
         // printf("Alpha_plain:\n");
-        // for (size_t i = 0; i < vec_size; i++)
-        // {
-        //     printf("%d ", Alpha_plain[i]);
-        // }
-        // printf("\n");
-
+        // printVecbool(Alpha_plain);
         // printf("Beta_j:\n");
-        // for (size_t i = 0; i < vec_size; i++)
-        // {
-        //     printf("%d ", Beta_j[i]);
-        // }
-        // printf("\n");
-
+        // printVecbool(Beta_j);
         // printf("Delta_debug:\n");
         // print_vec_int64(Delta_debug);
         // printf("Eta__debug:\n");
@@ -813,14 +883,10 @@ void SecurennEngine::shareConvert(const vector<int64_t> &Aj, vector<int64_t> &Yj
         reveal_zp(Xbits_plain, Xbits_debug);
         reveal_L_1(dummy_pad, dummy_pad1);
         reveal_L_1(dummy_pad, dummy_pad1);
-        reveal_L_1(dummy_pad, Theta_debug);
+        reveal_L_1(dummy_pad, dummy_pad1);
 
         // printf("Delta_plain:\n");
-        // for (size_t i = 0; i < vec_size; i++)
-        // {
-        //     printf("%d ", Delta_plain[i]);
-        // }
-        // printf("\n");  
+        // printVecbool(Delta_plain);
 
 #endif
     }
@@ -829,7 +895,7 @@ void SecurennEngine::shareConvert(const vector<int64_t> &Aj, vector<int64_t> &Yj
 /// @brief 计算msb
 /// @param Aj Z_L_1上的秘密分享
 /// @param Bj Z_L上的秘密分享
-void SecurennEngine::msb(const vector<int64_t> &Aj, vector<int64_t> &Bj)
+void SecurennEngine::msb_L_1(const vector<int64_t> &Aj, vector<int64_t> &Bj)
 {
     size_t vec_size = Aj.size();
     Bj.resize(vec_size);
@@ -983,6 +1049,17 @@ void SecurennEngine::msb(const vector<int64_t> &Aj, vector<int64_t> &Bj)
         reveal(Delta_j, Delta_debug);
         reveal(Xlsb_j, Xlsb_debug);
         reveal(Theta_j, Theta_debug);
+
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            bool temp1 = (uint64_t)Y_debug[i] % 2, temp2 = A_debug[i] < 0;
+            assert(temp1 == temp2);
+            assert(Beta_debug[i] == ((uint64_t)X_debug[i] > (uint64_t)R_plain[i]));
+            assert(Delta_debug[i] == (Xlsb_debug[i] ^ R0_plain[i]));
+            assert(Theta_debug[i] == (Delta_debug[i] * Beta_debug[i]));
+            assert(temp1 == (Beta_debug[i] + Delta_debug[i] - 2 * Theta_debug[i]));
+        }
+
         // printf("in msb++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++===\n");
         // printf("A_debug:\n");
         // print_vec_int64(A_debug);
@@ -992,8 +1069,6 @@ void SecurennEngine::msb(const vector<int64_t> &Aj, vector<int64_t> &Bj)
         // print_vec_int64(Y_debug);
         // printf("R_plain:\n");
         // print_vec_int64(R_plain);
-
-        
         // printf("Xlsb_debug:\n");
         // print_vec_int64(Xlsb_debug);
         // printf("R0_plain:\n");
@@ -1006,4 +1081,32 @@ void SecurennEngine::msb(const vector<int64_t> &Aj, vector<int64_t> &Bj)
         // print_vec_int64(Theta_debug);
 #endif
     }
+}
+
+/// @brief
+/// @param Aj Z_L上的秘密分享, [2^{-62}, 2^{62}-1]
+/// @param Bj Z_L上的秘密分享
+void SecurennEngine::msb(const vector<int64_t> &Aj, vector<int64_t> &Bj)
+{
+
+    size_t vec_size = Aj.size();
+    Bj.resize(vec_size);
+    vector<int64_t> _2Aj(vec_size);
+    for (size_t i = 0; i < vec_size; i++)
+    {
+        _2Aj[i] = Aj[i] << 1;
+    }
+    vector<int64_t> Yj(vec_size);
+    shareConvert(_2Aj, Yj);
+    msb_L_1(Yj, Bj);
+#if defined MYDEBUG
+    int64_t low_bound = (int64_t)-1 << 62;
+    int64_t up_bound = ((int64_t)1 << 62) - 1;
+    vector<int64_t> A_debug(vec_size);
+    reveal(Aj, A_debug);
+    for (size_t i = 0; i < vec_size; i++)
+    {
+        assert(low_bound <= A_debug[i] && A_debug[i] <= up_bound);
+    }
+#endif
 }

@@ -7,7 +7,7 @@
 using MatrixXl = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>;
 using VecI64 = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
 using zpshare = std::array<uint16_t, 64>;
-using vecbool = vector<int8_t>;
+using vecbool = std::vector<int8_t>;
 
 using std::string;
 using std::vector;
@@ -237,4 +237,28 @@ static void printVecbool(const vecbool &input)
         printf("%d ", input[i]);
     }
     printf("\n");
+}
+
+static void print_plus()
+{
+    for (size_t i = 0; i < 50; i++)
+    {
+        printf("+");
+        if (i == 49)
+        {
+            printf("\n");
+        }
+    }
+}
+
+static void print_minus()
+{
+    for (size_t i = 0; i < 50; i++)
+    {
+        printf("-");
+        if (i == 49)
+        {
+            printf("\n");
+        }
+    }
 }

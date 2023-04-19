@@ -179,13 +179,15 @@ void test2(ABY3Engine &aby3Engine)
     }
 }
 
+/// @brief 测试msb
+/// @param aby3Engine
 void test3(ABY3Engine &aby3Engine)
 {
     size_t nextParty = (aby3Engine.party_id + 1) % 3;
     size_t prevParty = (aby3Engine.party_id + 2) % 3;
     PRgenerator commRando(time(NULL), 0);
     {
-        size_t vec_size = 10;
+        size_t vec_size = 4;
         VecI64 X_plain(vec_size);
         for (size_t i = 0; i < vec_size; i++)
         {
@@ -202,10 +204,52 @@ void test3(ABY3Engine &aby3Engine)
         {
             assert(Z_debug[i] == (X_plain[i] < 0));
         }
+        array<VecI64, 2> Wj;
+        VecI64 W_debug;
+        aby3Engine.bit_inject(Xj, Zj, Wj);
+        aby3Engine.reveal(Wj, W_debug);
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            assert(X_plain[i] * Z_debug[i] == W_debug[i]);
+        }
+        
         // printf("X_plain:\n");
         // printVecI64(X_plain);
         // printf("Z_debug:\n");
         // printVecbool(Z_debug);
+        // printf("W_debug:\n");
+        // printVecI64(W_debug);
+    }
+}
+
+/// @brief 测试trunc
+/// @param aby3Engine
+void test4(ABY3Engine &aby3Engine)
+{
+    size_t nextParty = (aby3Engine.party_id + 1) % 3;
+    size_t prevParty = (aby3Engine.party_id + 2) % 3;
+    PRgenerator commRando(time(NULL), 0);
+    {
+        size_t vec_size = 10;
+        VecI64 X_plain(vec_size), Y_plain;
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            X_plain[i] = commRando.pop_int64();
+            X_plain[i] = X_plain[i] >> 32;
+        }
+        array<VecI64, 2> Xj, Yj;
+        aby3Engine.share(X_plain, Xj);
+        aby3Engine.trunc(Xj, Yj, 16);
+        aby3Engine.reveal(Yj, Y_plain);
+        // printf("X_plain:\n");
+        // printVecI64(X_plain);
+        // printf("Y_plain:\n");
+        // printVecI64(Y_plain);
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            int64_t temp = X_plain[i] >> 16;
+            assert(Y_plain[i] == temp || Y_plain[i] == (temp - 1));
+        }
     }
 }
 
@@ -227,6 +271,6 @@ int main(int argc, char const *argv[])
     test1(aby3Engine);
     test2(aby3Engine);
     test3(aby3Engine);
-
+    test4(aby3Engine);
     return 0;
 }

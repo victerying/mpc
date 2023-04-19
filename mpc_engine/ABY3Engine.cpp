@@ -1,6 +1,6 @@
 #include "ABY3Engine.hpp"
 
-#define MYDEBUG
+// #define MYDEBUG
 
 static VecI64 bitwise_and(const VecI64 &a, const VecI64 &b)
 {
@@ -464,5 +464,575 @@ void ABY3Engine::msb(const array<VecI64, 2> &Gj, const array<VecI64, 2> &Pj, arr
             Zj[i][k] = Gj_vec[i][k] ^ backup[i][k];
         }
     }
+}
 
+void ABY3Engine::trunc(const array<VecI64, 2> &Xj, array<VecI64, 2> &Yj, size_t number)
+{
+    assert(number < 64);
+    size_t vec_size = Xj[0].size();
+    assert(vec_size == Xj[1].size());
+
+    size_t nextParty = (party_id + 1) % 3;
+    size_t prevParty = (party_id + 2) % 3;
+    Yj[0].resize(vec_size);
+    Yj[1].resize(vec_size);
+
+    if (party_id == 0)
+    {
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            Yj[0][i] = Xj[0][i] >> number;
+        }
+    }
+    else if (party_id == 1)
+    {
+
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            Yj[0][i] = Xj[0][i] + Xj[1][i];
+            Yj[0][i] = Yj[0][i] >> number;
+            Yj[0][i] = Yj[0][i] - prgs[2].pop_int64();
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < vec_size; i++)
+        {
+            Yj[0][i] = prgs[1].pop_int64();
+        }
+    }
+    message_send[nextParty].clear();
+    vecI642string(Yj[0], message_send[prevParty]);
+    messenger->send_and_recv(message_send, message_recv);
+    string2vecI64(message_recv[nextParty], Yj[1]);
+}
+
+void ABY3Engine::bit_inject(const array<VecI64, 2> &Aj, const array<vecbool, 2> &Bj, array<VecI64, 2> &Cj)
+{
+#if defined MYDEBUG
+    // printf("Aj[0]\n");
+    // printVecI64(Aj[0]);
+    // printf("Aj[1]\n");
+    // printVecI64(Aj[1]);
+    // printf("Bj[0]\n");
+    // printVecbool(Bj[0]);
+    // printf("Bj[1]\n");
+    // printVecbool(Bj[1]);
+#endif
+    size_t vec_size = Aj[0].size();
+    assert(vec_size == Aj[1].size());
+    assert(vec_size == Bj[1].size());
+    assert(vec_size == Bj[0].size());
+    size_t nextParty = (party_id + 1) % 3;
+    size_t prevParty = (party_id + 2) % 3;
+    message_send[nextParty].clear();
+    message_send[prevParty].clear();
+    Cj[0].resize(vec_size);
+    Cj[1].resize(vec_size);
+
+    if (party_id == 0)
+    {
+        string temp0, temp1;
+        VecI64 C01(vec_size), C02(vec_size);
+        // P0发送者 通信前
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                C01[i] = prgs[1].pop_int64();
+                C02[i] = prgs[2].pop_int64();
+            }
+            VecI64 M0_0(vec_size), M0_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                M0_0[i] = (0 ^ Bj[0][i] ^ Bj[1][i]) * Aj[0][i] - C01[i] - C02[i];
+                M0_1[i] = (1 ^ Bj[0][i] ^ Bj[1][i]) * Aj[0][i] - C01[i] - C02[i];
+            }
+            VecI64 W02_0(vec_size), W02_1(vec_size);
+            VecI64 W01_0(vec_size), W01_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W02_0[i] = prgs[2].pop_int64();
+                W02_1[i] = prgs[2].pop_int64();
+                W01_0[i] = prgs[1].pop_int64();
+                W01_1[i] = prgs[1].pop_int64();
+            }
+            vecI642string(bitwise_xor(M0_0, W02_0), temp0);
+            vecI642string(bitwise_xor(M0_1, W02_1), temp1);
+            message_send[1] = temp0 + temp1;
+            vecI642string(bitwise_xor(M0_0, W01_0), temp0);
+            vecI642string(bitwise_xor(M0_1, W01_1), temp1);
+            message_send[2] = temp0 + temp1;
+#if defined MYDEBUG
+            // printf("[LOG]:\tP0发送者 通信前\n");
+            // print_plus();
+            // printf("C01\n");
+            // printVecI64(C01);
+            // printf("C02\n");
+            // printVecI64(C02);
+            // printf("M0_0\n");
+            // printVecI64(M0_0);
+            // printf("M0_1\n");
+            // printVecI64(M0_1);
+            // printf("W02_0\n");
+            // printVecI64(W02_0);
+            // printf("W02_1\n");
+            // printVecI64(W02_1);
+            // printf("W01_0\n");
+            // printVecI64(W01_0);
+            // printf("W01_1\n");
+            // printVecI64(W01_1);
+            // print_minus();
+#endif
+        }
+        // P1发送者 通信前
+        VecI64 C10(vec_size);
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                C10[i] = prgs[1].pop_int64();
+            }
+            VecI64 W10_0(vec_size), W10_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W10_0[i] = prgs[1].pop_int64();
+                W10_1[i] = prgs[1].pop_int64();
+            }
+            VecI64 W10_01(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W10_01[i] = Bj[0][i] == 1 ? W10_1[i] : W10_0[i];
+            }
+            vecI642string(W10_01, temp0);
+            message_send[2] = message_send[2] + temp0;
+#if defined MYDEBUG
+            // printf("[LOG]:\tP1发送者 通信前\n");
+            // print_plus();
+            // printf("C10\n");
+            // printVecI64(C10);
+            // printf("W10_0\n");
+            // printVecI64(W10_0);
+            // printf("W10_1\n");
+            // printVecI64(W10_1);
+            // printf("W10_01\n");
+            // printVecI64(W10_01);
+            // print_minus();
+#endif
+        }
+        messenger->send_and_recv(message_send, message_recv);
+        array<VecI64, 2> A0j, A12j;
+        for (size_t i = 0; i < 2; i++)
+        {
+            A0j[i].resize(vec_size);
+            A12j[i].resize(vec_size);
+        }
+
+        // P0发送者 通信后
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                A0j[0][i] = C02[i];
+                A0j[1][i] = C01[i];
+            }
+#if defined MYDEBUG
+            // printf("[LOG]:\tP0发送者 通信后\n");
+            // print_plus();
+            // printf("A0j[0]\n");
+            // printVecI64(A0j[0]);
+            // printf("A0j[1]\n");
+            // printVecI64(A0j[1]);
+            // print_minus();
+#endif
+        }
+        // P1发送者 通信后
+        {
+
+            VecI64 MW12_0(vec_size), MW12_1(vec_size);
+            assert(message_recv[1].size() == 2 * vec_size * sizeof(int64_t));
+            temp0 = message_recv[1].substr(0, vec_size * sizeof(int64_t));
+            temp1 = message_recv[1].substr(vec_size * sizeof(int64_t), vec_size * sizeof(int64_t));
+            string2vecI64(temp0, MW12_0);
+            string2vecI64(temp1, MW12_1);
+            VecI64 W12_01(vec_size);
+            string2vecI64(message_recv[2], W12_01);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                A12j[1][i] = C10[i];
+                A12j[0][i] = Bj[0][i] == 1 ? MW12_1[i] ^ W12_01[i] : MW12_0[i] ^ W12_01[i];
+            }
+#if defined MYDEBUG
+            // printf("[LOG]:\tP1发送者 通信后\n");
+            // print_plus();
+
+            // printf("MW12_0\n");
+            // printVecI64(MW12_0);
+            // printf("MW12_1\n");
+            // printVecI64(MW12_1);
+            // printf("W12_01\n");
+            // printVecI64(W12_01);
+            // printf("A12j[0]\n");
+            // printVecI64(A12j[0]);
+            // printf("A12j[1]\n");
+            // printVecI64(A12j[1]);
+            // print_minus();
+#endif
+        }
+        for (size_t i = 0; i < 2; i++)
+        {
+            Cj[i] = A0j[i] + A12j[i];
+        }
+#if defined MYDEBUG
+        vecbool B_debug;
+        reveal_bools(Bj, B_debug);
+        VecI64 A0_debug;
+        reveal(A0j, A0_debug);
+        if (party_id == 0)
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                assert(A0_debug[i] == Aj[0][i] * B_debug[i]);
+            }
+        VecI64 A12_debug;
+        reveal(A12j, A12_debug);
+        if (party_id == 1)
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                assert(A12_debug[i] == (Aj[0][i] + Aj[1][i]) * B_debug[i]);
+            }
+#endif
+    }
+    else if (party_id == 1)
+    {
+        string temp0, temp1;
+        VecI64 C01(vec_size);
+        // P0发送者 通信前
+        {
+
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                C01[i] = prgs[0].pop_int64();
+            }
+            VecI64 W01_0(vec_size), W01_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W01_0[i] = prgs[0].pop_int64();
+                W01_1[i] = prgs[0].pop_int64();
+            }
+            VecI64 W01_01(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W01_01[i] = Bj[1][i] == 1 ? W01_1[i] : W01_0[i];
+            }
+            vecI642string(W01_01, temp0);
+            message_send[2] = temp0;
+#if defined MYDEBUG
+            // printf("[LOG]:\tP0发送者 通信前\n");
+            // print_plus();
+            // printf("C01\n");
+            // printVecI64(C01);
+            // printf("W01_0\n");
+            // printVecI64(W01_0);
+            // printf("W01_1\n");
+            // printVecI64(W01_1);
+            // printf("W01_01\n");
+            // printVecI64(W01_01);
+            // print_minus();
+#endif
+        }
+        VecI64 C10(vec_size), C12(vec_size);
+        // P1发送者 通信前
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                C10[i] = prgs[0].pop_int64();
+                C12[i] = prgs[2].pop_int64();
+            }
+            VecI64 M1_0(vec_size), M1_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                M1_0[i] = (0 ^ Bj[0][i] ^ Bj[1][i]) * (Aj[0][i] + Aj[1][i]) - C10[i] - C12[i];
+                M1_1[i] = (1 ^ Bj[0][i] ^ Bj[1][i]) * (Aj[0][i] + Aj[1][i]) - C10[i] - C12[i];
+            }
+            VecI64 W10_0(vec_size), W10_1(vec_size);
+            VecI64 W12_0(vec_size), W12_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W10_0[i] = prgs[0].pop_int64();
+                W10_1[i] = prgs[0].pop_int64();
+                W12_0[i] = prgs[2].pop_int64();
+                W12_1[i] = prgs[2].pop_int64();
+            }
+            vecI642string(bitwise_xor(M1_0, W10_0), temp0);
+            vecI642string(bitwise_xor(M1_1, W10_1), temp1);
+            message_send[2] = message_send[2] + temp0 + temp1;
+            vecI642string(bitwise_xor(M1_0, W12_0), temp0);
+            vecI642string(bitwise_xor(M1_1, W12_1), temp1);
+            message_send[0] = message_send[0] + temp0 + temp1;
+#if defined MYDEBUG
+            // printf("[LOG]:\tP1发送者 通信前\n");
+            // print_plus();
+            // printf("C10\n");
+            // printVecI64(C10);
+            // printf("C12\n");
+            // printVecI64(C12);
+            // printf("M1_0\n");
+            // printVecI64(M1_0);
+            // printf("M1_1\n");
+            // printVecI64(M1_1);
+            // printf("W10_0\n");
+            // printVecI64(W10_0);
+            // printf("W10_1\n");
+            // printVecI64(W10_1);
+            // printf("W12_0\n");
+            // printVecI64(W12_0);
+            // printf("W12_1\n");
+            // printVecI64(W12_1);
+            // print_minus();
+#endif
+        }
+        messenger->send_and_recv(message_send, message_recv);
+        array<VecI64, 2> A0j, A12j;
+        for (size_t i = 0; i < 2; i++)
+        {
+            A0j[i].resize(vec_size);
+            A12j[i].resize(vec_size);
+        }
+        // P0发送者 通信后
+        {
+            VecI64 MW02_0(vec_size), MW02_1(vec_size);
+            assert(message_recv[0].size() == 2 * vec_size * sizeof(int64_t));
+            temp0 = message_recv[0].substr(0, vec_size * sizeof(int64_t));
+            temp1 = message_recv[0].substr(vec_size * sizeof(int64_t), 2 * vec_size * sizeof(int64_t));
+            string2vecI64(temp0, MW02_0);
+            string2vecI64(temp1, MW02_1);
+            VecI64 W02_01(vec_size);
+            string2vecI64(message_recv[2], W02_01);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                A0j[0][i] = C01[i];
+                A0j[1][i] = Bj[1][i] == 1 ? MW02_1[i] ^ W02_01[i] : MW02_0[i] ^ W02_01[i];
+            }
+#if defined MYDEBUG
+            // printf("[LOG]:\tP0发送者 通信后\n");
+            // print_plus();
+            // printf("MW02_0\n");
+            // printVecI64(MW02_0);
+            // printf("MW02_1\n");
+            // printVecI64(MW02_1);
+            // printf("W02_01\n");
+            // printVecI64(W02_01);
+            // printf("A0j[0]\n");
+            // printVecI64(A0j[0]);
+            // printf("A0j[1]\n");
+            // printVecI64(A0j[1]);
+            // print_minus();
+#endif
+        }
+        // P1发送者 通信后
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                A12j[0][i] = C10[i];
+                A12j[1][i] = C12[i];
+            }
+#if defined MYDEBUG
+            // printf("[LOG]:\tP1发送者 通信后\n");
+            // print_plus();
+            // printf("A12j[0]\n");
+            // printVecI64(A12j[0]);
+            // printf("A12j[1]\n");
+            // printVecI64(A12j[1]);
+            // print_minus();
+#endif
+        }
+        for (size_t i = 0; i < 2; i++)
+        {
+            Cj[i] = A0j[i] + A12j[i];
+        }
+#if defined MYDEBUG
+        vecbool B_debug;
+        reveal_bools(Bj, B_debug);
+        VecI64 A0_debug;
+        reveal(A0j, A0_debug);
+        if (party_id == 0)
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                assert(A0_debug[i] == Aj[0][i] * B_debug[i]);
+            }
+        VecI64 A12_debug;
+        reveal(A12j, A12_debug);
+        if (party_id == 1)
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                assert(A12_debug[i] == (Aj[0][i] + Aj[1][i]) * B_debug[i]);
+            }
+#endif
+    }
+    else // P2
+    {
+        string temp0, temp1;
+        VecI64 C02(vec_size);
+        // P0发送者 通信前
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                C02[i] = prgs[0].pop_int64();
+            }
+            VecI64 W02_0(vec_size), W02_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W02_0[i] = prgs[0].pop_int64();
+                W02_1[i] = prgs[0].pop_int64();
+            }
+            VecI64 W02_01(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W02_01[i] = Bj[0][i] == 1 ? W02_1[i] : W02_0[i];
+            }
+            vecI642string(W02_01, temp0);
+            message_send[1] = temp0;
+#if defined MYDEBUG
+            // printf("[LOG]:\tP0发送者 通信前\n");
+            // print_plus();
+            // printf("C02\n");
+            // printVecI64(C02);
+            // printf("W02_0\n");
+            // printVecI64(W02_0);
+            // printf("W02_1\n");
+            // printVecI64(W02_1);
+            // printf("W02_01\n");
+            // printVecI64(W02_01);
+            // print_minus();
+#endif
+        }
+        VecI64 C12(vec_size);
+        // P1发送者 通信前
+        {
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                C12[i] = prgs[1].pop_int64();
+            }
+            VecI64 W12_0(vec_size), W12_1(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W12_0[i] = prgs[1].pop_int64();
+                W12_1[i] = prgs[1].pop_int64();
+            }
+            VecI64 W12_01(vec_size);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                W12_01[i] = Bj[1][i] == 1 ? W12_1[i] : W12_0[i];
+            }
+            vecI642string(W12_01, temp0);
+            message_send[0] = temp0;
+#if defined MYDEBUG
+            // printf("[LOG]:\tP1发送者 通信前\n");
+            // print_plus();
+            // printf("C12\n");
+            // printVecI64(C12);
+            // printf("W12_0\n");
+            // printVecI64(W12_0);
+            // printf("W12_1\n");
+            // printVecI64(W12_1);
+            // printf("W12_01\n");
+            // printVecI64(W12_01);
+            // print_minus();
+#endif
+        }
+        messenger->send_and_recv(message_send, message_recv);
+        array<VecI64, 2> A0j, A12j;
+        for (size_t i = 0; i < 2; i++)
+        {
+            A0j[i].resize(vec_size);
+            A12j[i].resize(vec_size);
+        }
+        // P0发送者 通信后
+        {
+            VecI64 MW01_0(vec_size), MW01_1(vec_size);
+            assert(message_recv[0].size() == 3 * vec_size * sizeof(int64_t));
+            assert(message_recv[1].size() == 3 * vec_size * sizeof(int64_t));
+
+            temp0 = message_recv[0].substr(0, vec_size * sizeof(int64_t));
+            temp1 = message_recv[0].substr(vec_size * sizeof(int64_t), vec_size * sizeof(int64_t));
+            string2vecI64(temp0, MW01_0);
+            string2vecI64(temp1, MW01_1);
+            VecI64 W01_01(vec_size);
+            temp0 = message_recv[1].substr(0, vec_size * sizeof(int64_t));
+            string2vecI64(temp0, W01_01);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                A0j[1][i] = C02[i];
+                A0j[0][i] = Bj[0][i] == 1 ? MW01_1[i] ^ W01_01[i] : MW01_0[i] ^ W01_01[i];
+            }
+#if defined MYDEBUG
+            // printf("[LOG]:\tP0发送者 通信后\n");
+            // print_plus();
+            // printf("MW01_0\n");
+            // printVecI64(MW01_0);
+            // printf("MW01_1\n");
+            // printVecI64(MW01_1);
+            // printf("W01_01\n");
+            // printVecI64(W01_01);
+            // printf("A0j[0]\n");
+            // printVecI64(A0j[0]);
+            // printf("A0j[1]\n");
+            // printVecI64(A0j[1]);
+            // print_minus();
+#endif
+        }
+        // P1发送者 通信后
+        {
+            VecI64 MW10_0(vec_size), MW10_1(vec_size);
+            assert(message_recv[0].size() == 3 * vec_size * sizeof(int64_t));
+            assert(message_recv[1].size() == 3 * vec_size * sizeof(int64_t));
+            temp0 = message_recv[1].substr(vec_size * sizeof(int64_t), vec_size * sizeof(int64_t));
+            temp1 = message_recv[1].substr(2 * vec_size * sizeof(int64_t), vec_size * sizeof(int64_t));
+            string2vecI64(temp0, MW10_0);
+            string2vecI64(temp1, MW10_1);
+            VecI64 W10_01(vec_size);
+            temp0 = message_recv[0].substr(2 * vec_size * sizeof(int64_t), vec_size * sizeof(int64_t));
+            string2vecI64(temp0, W10_01);
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                A12j[0][i] = C12[i];
+                A12j[1][i] = Bj[1][i] == 1 ? MW10_1[i] ^ W10_01[i] : MW10_0[i] ^ W10_01[i];
+            }
+#if defined MYDEBUG
+            // printf("[LOG]:\tP1发送者 通信后\n");
+            // print_plus();
+            // printf("MW10_0\n");
+            // printVecI64(MW10_0);
+            // printf("MW10_1\n");
+            // printVecI64(MW10_1);
+            // printf("W10_01\n");
+            // printVecI64(W10_01);
+            // printf("A12j[0]\n");
+            // printVecI64(A12j[0]);
+            // printf("A12j[1]\n");
+            // printVecI64(A12j[1]);
+            // print_minus();
+#endif
+        }
+        for (size_t i = 0; i < 2; i++)
+        {
+            Cj[i] = A0j[i] + A12j[i];
+        }
+#if defined MYDEBUG
+        vecbool B_debug;
+        reveal_bools(Bj, B_debug);
+        VecI64 A0_debug;
+        reveal(A0j, A0_debug);
+        if (party_id == 0)
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                assert(A0_debug[i] == Aj[0][i] * B_debug[i]);
+            }
+        VecI64 A12_debug;
+        reveal(A12j, A12_debug);
+        if (party_id == 1)
+            for (size_t i = 0; i < vec_size; i++)
+            {
+                assert(A12_debug[i] == (Aj[0][i] + Aj[1][i]) * B_debug[i]);
+            }
+
+#endif
+    }
 }
