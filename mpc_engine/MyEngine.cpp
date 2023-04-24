@@ -1,6 +1,6 @@
 #include "MyEngine.hpp"
 
-#define MYDEBUG
+// #define MYDEBUG
 
 MyEngine::MyEngine(VirtuleMessenger *_messenger, size_t _party_id) : messenger(_messenger), party_id(_party_id)
 {
@@ -671,30 +671,30 @@ void MyEngine::bit_inject(const VecI64 &Xj, const vecbool &Aj, VecI64 &Zj)
         reveal(Sj, S_debug);
         reveal(Tj, T_debug);
 
-        printf("Bj\n");
-        printVecbool(Bj);
-        printf("B_debug\n");
-        printVecbool(B_debug);
-        printf("A_debug\n");
-        printVecbool(A_debug);
-        printf("C_plain\n");
-        printVecbool(C_plain);
+        // printf("Bj\n");
+        // printVecbool(Bj);
+        // printf("B_debug\n");
+        // printVecbool(B_debug);
+        // printf("A_debug\n");
+        // printVecbool(A_debug);
+        // printf("C_plain\n");
+        // printVecbool(C_plain);
 
-        printf("X_debug\n");
-        printVecI64(X_debug);
-        printf("U_debug\n");
-        printVecI64(U_debug);
-        printf("Y_plain\n");
-        printVecI64(Y_plain);
+        // printf("X_debug\n");
+        // printVecI64(X_debug);
+        // printf("U_debug\n");
+        // printVecI64(U_debug);
+        // printf("Y_plain\n");
+        // printVecI64(Y_plain);
 
-        printf("V_debug\n");
-        printVecI64(V_debug);
-        printf("W_debug\n");
-        printVecI64(W_debug);
-        printf("S_debug\n");
-        printVecI64(S_debug);
-        printf("T_debug\n");
-        printVecI64(T_debug);
+        // printf("V_debug\n");
+        // printVecI64(V_debug);
+        // printf("W_debug\n");
+        // printVecI64(W_debug);
+        // printf("S_debug\n");
+        // printVecI64(S_debug);
+        // printf("T_debug\n");
+        // printVecI64(T_debug);
 
 #endif
     }
@@ -762,11 +762,11 @@ void MyEngine::bit_inject(const VecI64 &Xj, const vecbool &Aj, VecI64 &Zj)
         reveal(S[0], S_debug);
         reveal(T[0], T_debug);
 
-        printf("B_plain\n");
-        printVecbool(B_plain);
+        // printf("B_plain\n");
+        // printVecbool(B_plain);
 
-        printf("U_plain\n");
-        printVecI64(U_plain);
+        // printf("U_plain\n");
+        // printVecI64(U_plain);
 #endif
     }
 }

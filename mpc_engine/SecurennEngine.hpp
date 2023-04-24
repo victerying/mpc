@@ -11,8 +11,6 @@
 #define KEY0 0xF0
 #define KEY1 0xF0 
 #define KEY2 0xF0
-static const uint16_t P = 67;
-static const uint64_t L_1 = -1;
 using MatrixXl = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>;
 // 第一个元素表示最低位的秘密分享,每一个uint16_t表示在Z67上的比特分享，属于[0,66]
 using zpshare = std::array<uint16_t, 64>;

@@ -13,8 +13,7 @@
 #define KEY0 0xF0
 #define KEY1 0xF0
 #define KEY2 0xF0
-static const uint16_t P = 67;
-static const uint64_t L_1 = -1;
+
 // using MatrixXl = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>;
 // using VecI64 = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
 // using vecbool = vector<int8_t>;

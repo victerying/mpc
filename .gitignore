@@ -1,3 +1,5 @@
 eigen-3.4.0
 test/log/*
 test/target/*
+benchmark/target/*
+benchmark/log/*
