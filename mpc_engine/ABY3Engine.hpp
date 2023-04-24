@@ -14,13 +14,13 @@
 #define KEY1 0xF0
 #define KEY2 0xF0
 
-using MatrixXl = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>;
-using VecI64 = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
-using vecbool = vector<int8_t>;
-using std::string;
-using std::vector;
+// using MatrixXl = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>;
+// using VecI64 = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
+// using vecbool = vector<int8_t>;
 using std::array;
 using std::bitset;
+using std::string;
+using std::vector;
 class ABY3Engine
 {
 private:
@@ -44,7 +44,7 @@ public:
     void vector_mul(const array<VecI64, 2> &Xj, const array<VecI64, 2> &Yj, array<VecI64, 2> &Zj);
     void vecbool_mul(const array<vecbool, 2> &Xj, const array<vecbool, 2> &Yj, array<vecbool, 2> &Zj);
     void add_prepare(const array<VecI64, 2> &Xj, array<VecI64, 2> &Gj, array<VecI64, 2> &Pj);
-    void msb(const array<VecI64, 2> &Gj,const array<VecI64, 2> &Pj, array<vecbool, 2> &Zj);
+    void msb(const array<VecI64, 2> &Gj, const array<VecI64, 2> &Pj, array<vecbool, 2> &Zj);
 
     void trunc(const array<VecI64, 2> &Xj, array<VecI64, 2> &Yj, size_t number);
     void bit_inject(const array<VecI64, 2> &Aj, const array<vecbool, 2> &Bj, array<VecI64, 2> &Cj);
