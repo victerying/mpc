@@ -1,0 +1,5 @@
+# 基于安全多方计算的隐私保护机器学习
+
+## quick start
++ cd benchmark
++ make run-benchmark1
